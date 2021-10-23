@@ -9,7 +9,7 @@ void waitNetworkReplyFinish(QNetworkReply *reply) {
 }
 
 void sleep(int secs) {
-    QEventLoop eventloop;
-    QTimer::singleShot(secs * 1000, &eventloop, SLOT(quit()));
-    eventloop.exec();
+    QEventLoop eventLoop;
+    QTimer::singleShot(secs * 1000, &eventLoop, SLOT(quit()));
+    eventLoop.exec();
 }

@@ -7,13 +7,13 @@ Q_OBJECT
 public:
     explicit DrcomController(QObject *parent = nullptr);
 
-    ~DrcomController();
+    ~DrcomController() override;
 
     Q_INVOKABLE void login(const QString &host, const QString &account, const QString &password);
 
     Q_INVOKABLE void keepLogin(const QString &host, const QString &account, const QString &password);
 
-    Q_INVOKABLE void logout(const QString &host, const QString &account);
+    Q_INVOKABLE void logout(const QString &host);
 
     Q_INVOKABLE void setWorkerKeepLoginStop(bool stop);
 
@@ -31,8 +31,6 @@ signals:
     void workerKeepLogin(bool *stop);
 
     void workerLogout();
-
-    void workerError(QString err);
 
     void workerLoginSuccess();
 

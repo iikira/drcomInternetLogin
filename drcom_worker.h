@@ -9,7 +9,7 @@ public:
 
     DrcomWorker(const QString &host, const QString &account, const QString &password);
 
-    ~DrcomWorker();
+    ~DrcomWorker() override;
 
     void setHost(const QString &host);
 
@@ -21,7 +21,7 @@ public slots:
 
     void login();
 
-    void keepLogin(bool *stop);
+    void keepLogin(const bool *stop);
 
     void logout();
 
@@ -32,11 +32,9 @@ private:
 
     QNetworkAccessManager *netManager;
 
-    bool isLogin; // 是否已经登录
-    QString err; // 错误
     QString networkConfigQuery;
 
-    void checkNetworkState();
+    void checkNetworkState(bool &isLogin, QString &err);
 
     void requestLogin();
 

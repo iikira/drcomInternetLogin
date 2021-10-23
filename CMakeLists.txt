@@ -24,10 +24,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #    endif()
 #endif()
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Quick Concurrent REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick Concurrent REQUIRED)
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Quick Widgets REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick Widgets REQUIRED)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -37,42 +35,41 @@ set(PROJECT_SOURCES
         defer.h defer.cpp
         utils.h utils.cpp
         settings.h settings.cpp
-)
+        )
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+if (${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(drcomInternetLogin
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-    )
-else()
-    if(ANDROID)
-        add_library(drcomInternetLogin SHARED
+            MANUAL_FINALIZATION
             ${PROJECT_SOURCES}
-        )
-    else()
+            )
+else ()
+    if (ANDROID)
+        add_library(drcomInternetLogin SHARED
+                ${PROJECT_SOURCES}
+                )
+    else ()
         add_executable(drcomInternetLogin
-          ${PROJECT_SOURCES}
-        )
-    endif()
-endif()
+                ${PROJECT_SOURCES}
+                )
+    endif ()
+endif ()
 
 target_compile_definitions(drcomInternetLogin
-  PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
+        PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 target_link_libraries(drcomInternetLogin
-  PRIVATE
-  Qt${QT_VERSION_MAJOR}::Core
-  Qt${QT_VERSION_MAJOR}::Quick
-  Qt${QT_VERSION_MAJOR}::Concurrent
-  Qt${QT_VERSION_MAJOR}::Widgets
-)
+        PRIVATE
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::Quick
+        Qt${QT_VERSION_MAJOR}::Widgets
+        )
 
 set_target_properties(drcomInternetLogin PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-)
+        MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
+        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+        )
 
-if(QT_VERSION_MAJOR EQUAL 6)
+if (QT_VERSION_MAJOR EQUAL 6)
     qt_import_qml_plugins(drcomInternetLogin)
     qt_finalize_executable(drcomInternetLogin)
-endif()
+endif ()

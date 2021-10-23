@@ -85,7 +85,7 @@ Window {
             text: qsTr("Logout")
             onClicked: {
                 btnLogout.enabled = false
-                drcomController.logout(textFieldHost.text, textFieldAccount.text)
+                drcomController.logout(textFieldHost.text)
                 saveInput()
             }
         }

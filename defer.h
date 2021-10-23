@@ -8,7 +8,7 @@
 
 class Defer {
 public:
-    explicit Defer(const std::function<void()> &deferFunc);
+    explicit Defer(std::function<void()> deferFunc);
 
     ~Defer();
 

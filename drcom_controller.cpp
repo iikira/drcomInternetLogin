@@ -1,6 +1,5 @@
 #include "drcom_controller.h"
 #include <QThread>
-#include <QtConcurrent>
 #include "defer.h"
 
 DrcomController::DrcomController(QObject *parent) :
@@ -48,7 +47,7 @@ void DrcomController::keepLogin(const QString &host, const QString &account, con
     });
 }
 
-void DrcomController::logout(const QString &host, const QString &account) {
+void DrcomController::logout(const QString &host) {
     drcomWorker->setHost(host);
     emit workerLogout();
 }

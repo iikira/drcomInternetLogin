@@ -8,22 +8,23 @@
 #include <QEventLoop>
 #include <QRegularExpression>
 #include <QThread>
-#include <QDebug>
-#include <QtConcurrent>
+
+const QString userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36";
 
 DrcomWorker::DrcomWorker() :
-        netManager(new QNetworkAccessManager(this)), isLogin(false) {
-    auto noProxy = QNetworkProxy(QNetworkProxy::NoProxy);
-    netManager->setProxy(noProxy);
-
+        netManager(new QNetworkAccessManager(this)) {
+    // 禁用proxy
+    netManager->setProxy(QNetworkProxy(QNetworkProxy::NoProxy));
+    // 加载配置
     networkConfigQuery = SETTINGS->networkConfigQuery();
 }
 
 DrcomWorker::DrcomWorker(const QString &host, const QString &account, const QString &password) :
         host_(host), account_(account), password_(password),
-        netManager(new QNetworkAccessManager(this)), isLogin(false) {}
+        netManager(new QNetworkAccessManager(this)) {}
 
 DrcomWorker::~DrcomWorker() {
+    netManager->deleteLater();
 }
 
 void DrcomWorker::setHost(const QString &host) {
@@ -38,7 +39,7 @@ void DrcomWorker::setPassword(const QString &password) {
     password_ = password;
 }
 
-void DrcomWorker::checkNetworkState() {
+void DrcomWorker::checkNetworkState(bool &isLogin, QString &err) {
     QNetworkReply *reply = netManager->get(QNetworkRequest(QUrl("http://119.29.29.29")));
     defer([&] {
         reply->deleteLater();
@@ -76,14 +77,33 @@ void DrcomWorker::checkNetworkState() {
     QUrl url(urlStr);
 
     networkConfigQuery = url.query();
+    // 保存配置
     SETTINGS->setNetworkConfigQuery(networkConfigQuery);
+
+    // 无错误, err置空
+    err.clear();
+}
+
+void DrcomWorker::requestLogin() {
+    // 发送登录请求
+    QNetworkRequest req(QUrl(QString("http://%1/eportal/?c=ACSetting&a=Login&%2").arg(host_, networkConfigQuery)));
+    req.setHeader(QNetworkRequest::UserAgentHeader, userAgent);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+
+    QString postData = QString("DDDDD=,0,%1&upass=%2").arg(account_, password_);
+    QNetworkReply *reply = netManager->post(req, postData.toUtf8());
+
+    waitNetworkReplyFinish(reply);
+    reply->deleteLater();
 }
 
 void DrcomWorker::login() {
     defer([&] {
         emit loginDone();
     });
-    checkNetworkState();
+    bool isLogin;
+    QString err;
+    checkNetworkState(isLogin, err);
     if (isLogin) {
         // 已登录
         emit loginSuccess();
@@ -97,7 +117,7 @@ void DrcomWorker::login() {
     requestLogin();
 
     // 检测网络是否连接正常
-    checkNetworkState();
+    checkNetworkState(isLogin, err);
     if (isLogin) {
         // 已登录
         emit loginSuccess();
@@ -106,13 +126,16 @@ void DrcomWorker::login() {
     emit error("登录失败");
 }
 
-void DrcomWorker::keepLogin(bool *stop) {
+void DrcomWorker::keepLogin(const bool *stop) {
     qDebug() << "keepLogin: running";
+
+    bool isLogin;
+    QString err;
     while (!*stop) {
         defer([&] {
             sleep(5);
         });
-        checkNetworkState();
+        checkNetworkState(isLogin, err);
         if (isLogin) {
             // 已登录
             qDebug() << "keepLogin: login success";
@@ -124,7 +147,6 @@ void DrcomWorker::keepLogin(bool *stop) {
         }
 
         qDebug() << "keepLogin: request login";
-
         requestLogin();
     }
     qDebug() << "keepLogin: exit";
@@ -136,8 +158,7 @@ void DrcomWorker::logout() {
         emit logoutDone();
     });
     QNetworkRequest req(QUrl(QString("http://%1/eportal/?c=ACSetting&a=Logout&%2").arg(host_, networkConfigQuery)));
-    req.setHeader(QNetworkRequest::UserAgentHeader,
-                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");
+    req.setHeader(QNetworkRequest::UserAgentHeader, userAgent);
 
     QNetworkReply *reply = netManager->get(req);
 
@@ -146,25 +167,13 @@ void DrcomWorker::logout() {
     reply->deleteLater();
 
     // 检测网络是否连接正常
-    checkNetworkState();
+    bool isLogin;
+    QString err;
+    checkNetworkState(isLogin, err);
     if (!isLogin) {
-        // 未登录
+        // 未登录, 则, 退出登录成功
         emit logoutSuccess();
         return;
     }
     emit error("退出登录失败");
-}
-
-void DrcomWorker::requestLogin() {
-    // 发送登录请求
-    QNetworkRequest req(QUrl(QString("http://%1/eportal/?c=ACSetting&a=Login&%2").arg(host_, networkConfigQuery)));
-    req.setHeader(QNetworkRequest::UserAgentHeader,
-                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");
-    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-
-    QString postData = QString("DDDDD=,0,%1&upass=%2").arg(account_, password_);
-    QNetworkReply *reply = netManager->post(req, postData.toUtf8());
-    
-    waitNetworkReplyFinish(reply);
-    reply->deleteLater();
 }

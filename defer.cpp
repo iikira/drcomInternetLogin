@@ -1,6 +1,6 @@
 #include "defer.h"
 
-Defer::Defer(const std::function<void()> &deferFunc) : deferFunc(deferFunc) {}
+Defer::Defer(std::function<void()> deferFunc) : deferFunc(std::move(deferFunc)) {}
 
 Defer::~Defer() {
     if (deferFunc)
