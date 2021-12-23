@@ -1,4 +1,5 @@
 .idea/
 
-CMakeLists.txt.user
+assets/page
+CMakeLists.txt.user*
 cmake-build-*/

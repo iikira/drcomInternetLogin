@@ -1,6 +1,7 @@
 #include "utils.h"
 #include <QEventLoop>
 #include <QTimer>
+#include <QNetworkInterface>
 
 void waitNetworkReplyFinish(QNetworkReply *reply) {
     QEventLoop eventLoop;

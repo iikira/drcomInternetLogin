@@ -94,7 +94,7 @@ Window {
     Connections {
         target: drcomController
         function onWorkerLoginSuccess() {
-            dialog.text = "登录成功"
+            dialog.text = qsTr("登录成功")
             dialog.open()
         }
 
@@ -103,7 +103,7 @@ Window {
         }
 
         function onWorkerLogoutSuccess() {
-            dialog.text = "退出登录成功"
+            dialog.text = qsTr("退出登录成功")
             dialog.open()
         }
 

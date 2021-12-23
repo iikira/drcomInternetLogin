@@ -27,14 +27,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Quick Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick Widgets REQUIRED)
 
-set(PROJECT_SOURCES
-        main.cpp
-        qml.qrc
+set(COMMON_SOURCES
         drcom_worker.h drcom_worker.cpp
         drcom_controller.h drcom_controller.cpp
         defer.h defer.cpp
         utils.h utils.cpp
         settings.h settings.cpp
+        )
+
+set(PROJECT_SOURCES
+        main.cpp
+        qml.qrc
+        ${COMMON_SOURCES}
         )
 
 if (${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -73,3 +77,12 @@ if (QT_VERSION_MAJOR EQUAL 6)
     qt_import_qml_plugins(drcomInternetLogin)
     qt_finalize_executable(drcomInternetLogin)
 endif ()
+
+add_executable(drcomInternetLoginCore
+        console.cpp
+        ${COMMON_SOURCES}
+        )
+target_link_libraries(drcomInternetLoginCore
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::Network
+        )

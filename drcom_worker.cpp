@@ -5,23 +5,22 @@
 #include <QNetworkProxy>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QEventLoop>
 #include <QRegularExpression>
 #include <QThread>
+#include <QUrlQuery>
 
 const QString userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36";
 
 DrcomWorker::DrcomWorker() :
         netManager(new QNetworkAccessManager(this)) {
-    // 禁用proxy
-    netManager->setProxy(QNetworkProxy(QNetworkProxy::NoProxy));
-    // 加载配置
-    networkConfigQuery = SETTINGS->networkConfigQuery();
+    initNetConfig();
 }
 
 DrcomWorker::DrcomWorker(const QString &host, const QString &account, const QString &password) :
         host_(host), account_(account), password_(password),
-        netManager(new QNetworkAccessManager(this)) {}
+        netManager(new QNetworkAccessManager(this)) {
+    initNetConfig();
+}
 
 DrcomWorker::~DrcomWorker() {
     netManager->deleteLater();
@@ -39,6 +38,42 @@ void DrcomWorker::setPassword(const QString &password) {
     password_ = password;
 }
 
+void DrcomWorker::initNetConfig() {
+    // 禁用proxy
+    // netManager 默认不会redirect
+    netManager->setProxy(QNetworkProxy(QNetworkProxy::NoProxy));
+    netManager->setRedirectPolicy(QNetworkRequest::RedirectPolicy::ManualRedirectPolicy);
+    // 加载配置
+    networkConfigQuery = SETTINGS->networkConfigQuery();
+}
+
+void DrcomWorker::getUserIp(const QUrl &url, QString &userIp, QString &err) {
+    QNetworkReply *reply = netManager->get(QNetworkRequest(url));
+    defer([&] {
+        reply->deleteLater();
+    });
+    // 等待响应完毕
+    waitNetworkReplyFinish(reply);
+
+    // 检测网络错误
+    auto errCode = reply->error();
+    if (errCode != QNetworkReply::NoError) {
+        err = reply->errorString();
+        return;
+    }
+
+    auto body = reply->readAll();
+    QRegularExpression exp("v46ip='(.*?)'");
+    auto match = exp.match(body);
+    if (!match.hasMatch()) {
+        err = "未检测到userIp";
+        return;
+    }
+
+    userIp = match.captured(1);
+    err.clear(); // 无错误, 清空
+}
+
 void DrcomWorker::checkNetworkState(bool &isLogin, QString &err) {
     QNetworkReply *reply = netManager->get(QNetworkRequest(QUrl("http://119.29.29.29")));
     defer([&] {
@@ -50,7 +85,9 @@ void DrcomWorker::checkNetworkState(bool &isLogin, QString &err) {
 
     // 获取http状态码
     QVariant statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
-    isLogin = statusCode.toInt() == 404;
+    int code = statusCode.toInt();
+    qDebug() << "request 119.29.29.29, code:" << code;
+    isLogin = code == 404;
     if (isLogin) {
         // 网络正常访问
         return;
@@ -63,20 +100,35 @@ void DrcomWorker::checkNetworkState(bool &isLogin, QString &err) {
         return;
     }
 
-    // 获取网络配置
-    auto body = reply->readAll();
-    QRegularExpression exp("<script type=\"text/javascript\">location.href=\"(.*?)\"</script>");
-    auto match = exp.match(body);
-    if (!match.hasMatch()) {
-        // 未检测到
-        err = "页面状态未知";
-        return;
+    // 获取网络配置, 获取urlStr
+    // 判断跳转码
+    if (code == 302) {
+        QString location = reply->header(QNetworkRequest::KnownHeaders::LocationHeader).toString();
+        QUrl url(location);
+        QUrlQuery query(url);
+        QString userIp = query.queryItemValue("UserIP");
+        // 如果userIp未获取到, 就访问location来获取ip
+        if (userIp.isEmpty()) {
+            getUserIp(url, userIp, err);
+            if (!err.isEmpty()) {
+                return;
+            }
+        }
+        networkConfigQuery = QString("wlanuserip=%1&wlanacip=%2&wlanacname=%3").arg(userIp, "null", "null");
+    } else {
+        auto body = reply->readAll();
+        QRegularExpression exp("<script type=\"text/javascript\">location.href=\"(.*?)\"</script>");
+        auto match = exp.match(body);
+        if (!match.hasMatch()) {
+            err = "未检测到location.href";
+            return;
+        }
+
+        QString urlStr = match.captured(1);
+        QUrl url(urlStr);
+        networkConfigQuery = url.query();
     }
 
-    QString urlStr = match.captured(1);
-    QUrl url(urlStr);
-
-    networkConfigQuery = url.query();
     // 保存配置
     SETTINGS->setNetworkConfigQuery(networkConfigQuery);
 
