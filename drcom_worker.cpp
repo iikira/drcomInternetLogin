@@ -77,7 +77,7 @@ void DrcomWorker::getUserIp(const QUrl &url, QString &userIp, QString &err) {
 void DrcomWorker::checkNetworkState(bool &isLogin, QString &err) {
     QNetworkReply *reply = netManager->get(QNetworkRequest(QUrl("http://119.29.29.29")));
     defer([&] {
-        reply->deleteLater();
+        delete reply; // 立即释放内存
     });
 
     // 等待响应完毕

@@ -1,8 +1,10 @@
 #include <QCoreApplication>
 #include <QCommandLineParser>
+#include "utils.h"
 #include "drcom_controller.h"
 
 int main(int argc, char *argv[]) {
+    qInstallMessageHandler(timeMessageHandler);
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("drcomInternetLoginCore");
     QCoreApplication::setApplicationVersion("1.0.0");
@@ -28,9 +30,9 @@ int main(int argc, char *argv[]) {
 
     DrcomController drcomController;
     drcomController.keepLogin(host, account, password);
-    QObject::connect(&drcomController, &DrcomController::error, [&](QString err){
+    QObject::connect(&drcomController, &DrcomController::error, [&](const QString& err){
         qInfo() << "err:" << err;
     });
 
-    return app.exec();
+    return QCoreApplication::exec();
 }

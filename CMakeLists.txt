@@ -78,11 +78,13 @@ if (QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(drcomInternetLogin)
 endif ()
 
-add_executable(drcomInternetLoginCore
-        console.cpp
-        ${COMMON_SOURCES}
-        )
-target_link_libraries(drcomInternetLoginCore
-        Qt${QT_VERSION_MAJOR}::Core
-        Qt${QT_VERSION_MAJOR}::Network
-        )
+if (NOT ANDROID)
+    add_executable(drcomInternetLoginCore
+            console.cpp
+            ${COMMON_SOURCES}
+            )
+    target_link_libraries(drcomInternetLoginCore
+            Qt${QT_VERSION_MAJOR}::Core
+            Qt${QT_VERSION_MAJOR}::Network
+            )
+endif ()
