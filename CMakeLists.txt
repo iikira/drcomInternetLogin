@@ -58,6 +58,14 @@ else ()
     endif ()
 endif ()
 
+# android openssl
+if (ANDROID)
+    if (NOT DEFINED ANDROID_OPENSSL_DIR)
+        set(ANDROID_OPENSSL_DIR ${ANDROID_SDK_ROOT}/android_openssl)
+    endif ()
+    include(${ANDROID_OPENSSL_DIR}/CMakeLists.txt)
+endif ()
+
 target_compile_definitions(drcomInternetLogin
         PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 target_link_libraries(drcomInternetLogin
@@ -66,6 +74,11 @@ target_link_libraries(drcomInternetLogin
         Qt${QT_VERSION_MAJOR}::Quick
         Qt${QT_VERSION_MAJOR}::Widgets
         )
+if (ANDROID)
+    target_link_libraries(drcomInternetLogin
+            PRIVATE
+            )
+endif ()
 
 set_target_properties(drcomInternetLogin PROPERTIES
         MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com

@@ -1,7 +1,6 @@
 #include "drcom_worker.h"
 #include "defer.h"
 #include "utils.h"
-#include "settings.h"
 #include <QNetworkProxy>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -43,8 +42,6 @@ void DrcomWorker::initNetConfig() {
     // netManager 默认不会redirect
     netManager->setProxy(QNetworkProxy(QNetworkProxy::NoProxy));
     netManager->setRedirectPolicy(QNetworkRequest::RedirectPolicy::ManualRedirectPolicy);
-    // 加载配置
-    networkConfigQuery = SETTINGS->networkConfigQuery();
 }
 
 void DrcomWorker::getUserIp(const QUrl &url, QString &userIp, QString &err) {
@@ -100,50 +97,17 @@ void DrcomWorker::checkNetworkState(bool &isLogin, QString &err) {
         return;
     }
 
-    // 获取网络配置, 获取urlStr
-    // 判断跳转码
-    if (code == 302) {
-        QString location = reply->header(QNetworkRequest::KnownHeaders::LocationHeader).toString();
-        QUrl url(location);
-        QUrlQuery query(url);
-        QString userIp = query.queryItemValue("UserIP");
-        // 如果userIp未获取到, 就访问location来获取ip
-        if (userIp.isEmpty()) {
-            getUserIp(url, userIp, err);
-            if (!err.isEmpty()) {
-                return;
-            }
-        }
-        networkConfigQuery = QString("wlanuserip=%1&wlanacip=%2&wlanacname=%3").arg(userIp, "null", "null");
-    } else {
-        auto body = reply->readAll();
-        QRegularExpression exp("<script type=\"text/javascript\">location.href=\"(.*?)\"</script>");
-        auto match = exp.match(body);
-        if (!match.hasMatch()) {
-            err = "未检测到location.href";
-            return;
-        }
-
-        QString urlStr = match.captured(1);
-        QUrl url(urlStr);
-        networkConfigQuery = url.query();
-    }
-
-    // 保存配置
-    SETTINGS->setNetworkConfigQuery(networkConfigQuery);
-
     // 无错误, err置空
     err.clear();
 }
 
 void DrcomWorker::requestLogin() {
     // 发送登录请求
-    QNetworkRequest req(QUrl(QString("http://%1/eportal/?c=ACSetting&a=Login&%2").arg(host_, networkConfigQuery)));
+    QNetworkRequest req(QUrl(QString("https://%1/eportal/portal/login?callback=dr1003&user_account=,0,%2&user_password=%3").arg(host_, account_, password_)));
     req.setHeader(QNetworkRequest::UserAgentHeader, userAgent);
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
-    QString postData = QString("DDDDD=,0,%1&upass=%2").arg(account_, password_);
-    QNetworkReply *reply = netManager->post(req, postData.toUtf8());
+    QNetworkReply *reply = netManager->get(req);
 
     waitNetworkReplyFinish(reply);
     reply->deleteLater();
@@ -209,7 +173,7 @@ void DrcomWorker::logout() {
     defer([&] {
         emit logoutDone();
     });
-    QNetworkRequest req(QUrl(QString("http://%1/eportal/?c=ACSetting&a=Logout&%2").arg(host_, networkConfigQuery)));
+    QNetworkRequest req(QUrl(QString("https://%1/eportal/portal/logout?callback=dr1003&login_method=1&user_account=drcom&user_password=123&ac_logout=1&register_mode=1&wlan_user_ipv6=&wlan_vlan_id=0&wlan_user_mac=000000000000&wlan_ac_ip=&wlan_ac_name=&jsVersion=4.1.3&v=8456&lang=zh").arg(host_)));
     req.setHeader(QNetworkRequest::UserAgentHeader, userAgent);
 
     QNetworkReply *reply = netManager->get(req);

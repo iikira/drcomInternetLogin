@@ -32,9 +32,6 @@ private:
 
     QNetworkAccessManager *netManager;
 
-    // 包含 wlanuserip wlanacip wlanacname
-    QString networkConfigQuery;
-
     void initNetConfig(); // 初始化网络配置
 
     void getUserIp(const QUrl &url, QString &userIp, QString &err);

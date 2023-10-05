@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     parser.addVersionOption();
 
     QCommandLineOption hostOption(QStringList() << "o" << "host", "host"
-                                ,"host", "p.njupt.edu.cn:801");
+                                ,"host", "p.njupt.edu.cn:802");
     QCommandLineOption accountOption(QStringList() << "a" << "account", "account"
                                 ,"account", "account");
     QCommandLineOption passwordOption(QStringList() << "p" << "password", "password"
