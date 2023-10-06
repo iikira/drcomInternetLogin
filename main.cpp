@@ -13,6 +13,7 @@ int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationDomain("iikira.com");
     QCoreApplication::setApplicationName("drcomInternetLogin");
 
+    qputenv("QT_ANDROID_NO_EXIT_CALL", "Noxit");
     QApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
